@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+/* ─── Truearth Design System ─────────────────────────────── */
+@theme {
+  --color-midnight: #000511;
+  --color-midnight-light: #0a1128;
+  --color-midnight-surface: #111a3a;
+  --color-accent-pink: #ec4899;
+  --color-accent-pink-glow: #f472b6;
+  --color-accent-indigo: #6366f1;
+  --color-accent-cyan: #22d3ee;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+}
+
+:root {
+  --background: #000511;
+  --foreground: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover: rgba(255, 255, 255, 0.08);
+}
+
+/* ─── Base ───────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  height: 100dvh;
+  width: 100vw;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── Glass Effect ───────────────────────────────────────── */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-hover:hover {
+  background: var(--glass-hover);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.glass-strong {
+  background: rgba(0, 5, 17, 0.85);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ─── Severity Colors ────────────────────────────────────── */
+.severity-critical { color: #ef4444; }
+.severity-high     { color: #f97316; }
+.severity-elevated { color: #eab308; }
+.severity-moderate { color: #3b82f6; }
+.severity-low      { color: #22c55e; }
+
+.severity-dot-critical { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+.severity-dot-high     { background: #f97316; box-shadow: 0 0 8px #f97316; }
+.severity-dot-elevated { background: #eab308; box-shadow: 0 0 8px #eab308; }
+.severity-dot-moderate { background: #3b82f6; box-shadow: 0 0 8px #3b82f6; }
+.severity-dot-low      { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+
+/* ─── Category Colors ────────────────────────────────────── */
+.cat-conflict         { color: #ef4444; }
+.cat-market           { color: #22d3ee; }
+.cat-resources        { color: #34d399; }
+.cat-natural_disaster { color: #f59e0b; }
+.cat-cyber            { color: #a855f7; }
+.cat-political        { color: #3b82f6; }
+.cat-humanitarian     { color: #ec4899; }
+
+/* ─── Animations ─────────────────────────────────────────── */
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50%      { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-ticker {
+  animation: ticker-scroll 40s linear infinite;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+/* ─── Leaflet Dark Theme Overrides ───────────────────────── */
+.leaflet-container {
+  background: #000511 !important;
+  font-family: var(--font-sans) !important;
+}
+
+.leaflet-control-zoom a {
+  background: rgba(0, 5, 17, 0.9) !important;
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: rgba(20, 25, 50, 0.95) !important;
+}
+
+.leaflet-control-attribution {
+  background: rgba(0, 5, 17, 0.7) !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  font-size: 9px !important;
+}
+
+.leaflet-control-attribution a {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: rgba(0, 5, 17, 0.95) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-popup-tip {
+  background: rgba(0, 5, 17, 0.95) !important;
+}
+
+/* ─── Pink Accent Glow ───────────────────────────────────── */
+.pink-glow {
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.15), 0 0 40px rgba(236, 72, 153, 0.05);
+}
+
+.pink-border-glow {
+  border-color: rgba(236, 72, 153, 0.3);
+}
+
+/* ─── Utility ────────────────────────────────────────────── */
+.text-xxs {
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+}
+
+.no-select {
+  user-select: none;
+  -webkit-user-select: none;
+}
