@@ -61,11 +61,13 @@ interface GlobalState {
   layers: LayerConfig[];
   settingsOpen: boolean;
   selectedEventId: string | null;
+  selectedAsset: { id: string; name: string; type: string; category: string; location: string; status: string } | null;
 
   // Actions — Data
   fetchEvents: () => Promise<void>;
   fetchNews: () => Promise<void>;
   fetchMarkets: () => Promise<void>;
+  startLiveNewsStream: () => void;
 
   // Actions — UI
   setViewMode: (mode: ViewMode) => void;
@@ -74,6 +76,7 @@ interface GlobalState {
   updateSettings: (partial: Partial<UserSettings>) => void;
   setSettingsOpen: (open: boolean) => void;
   setSelectedEvent: (id: string | null) => void;
+  setSelectedAsset: (asset: any | null) => void;
 
   // Actions — Events
   updateEvent: (id: string, updates: Partial<GlobalEvent>) => void;
@@ -89,6 +92,7 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
   layers: loadLayers(),
   settingsOpen: false,
   selectedEventId: null,
+  selectedAsset: null,
 
   // ── Data Fetchers ──
   fetchEvents: async () => {
@@ -113,6 +117,32 @@ export const useGlobalStore = create<GlobalState>((set, get) => ({
     } catch (err) {
       console.error('[TRUEARTH] Failed to fetch news:', err);
     }
+  },
+
+  startLiveNewsStream: () => {
+    // Poll for real news updates every 60 seconds
+    const pollNews = async () => {
+      try {
+        const res = await fetch('/api/news/fetch');
+        if (res.ok) {
+          const data = await res.json();
+          set((state) => {
+            const existingIds = new Set(state.newsArticles.map(a => a.id));
+            const newArticles = data.filter((a: NewsArticle) => !existingIds.has(a.id));
+            if (newArticles.length > 0) {
+              return { newsArticles: [...newArticles, ...state.newsArticles].slice(0, 100) };
+            }
+            return state;
+          });
+        }
+      } catch (err) {
+        console.error('[TRUEARTH] Live news poll failed:', err);
+      }
+      setTimeout(pollNews, 60000);
+    };
+
+    // Start the loop
+    setTimeout(pollNews, 60000);
   },
 
   fetchMarkets: async () => {

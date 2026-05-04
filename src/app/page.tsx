@@ -6,8 +6,9 @@ import dynamic from "next/dynamic";
 import HeaderBar from "@/components/ui/HeaderBar";
 import MarketTicker from "@/components/ui/MarketTicker";
 import LayersPanel from "@/components/ui/LayersPanel";
-import NewsFeed from "@/components/ui/NewsFeed";
+import NewsPanel from "@/components/ui/NewsPanel";
 import SettingsPanel from "@/components/ui/SettingsPanel";
+import AssetDetailsPopup from "@/components/ui/AssetDetailsPopup";
 
 const MapContainer = dynamic(() => import("@/components/MapContainer"), { ssr: false });
 
@@ -38,11 +39,15 @@ export default function Home() {
         <LayersPanel />
       </div>
 
-      {/* News Feed (bottom) */}
-      <NewsFeed />
+      {/* News Panel (right sidebar) */}
+      <NewsPanel />
+
+      {/* Asset Details Popup */}
+      <AssetDetailsPopup />
 
       {/* Settings Modal */}
       <SettingsPanel />
     </main>
   );
 }
+

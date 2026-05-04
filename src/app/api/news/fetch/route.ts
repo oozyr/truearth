@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import type { NewsArticle, EventCategory } from '@/types/global';
 import { RSS_SOURCES } from '@/lib/rss-sources';
 
-// Revalidate every 5 minutes
-export const revalidate = 300;
+// Revalidate every 60 seconds to keep live feed fresh
+export const revalidate = 60;
 
 // ─── Keyword-based categorization ───────────────────────────
 const CATEGORY_KEYWORDS: Record<EventCategory, string[]> = {
@@ -14,6 +14,7 @@ const CATEGORY_KEYWORDS: Record<EventCategory, string[]> = {
   cyber:            ['cyber', 'hack', 'malware', 'ransomware', 'breach', 'phishing', 'data leak'],
   political:        ['election', 'president', 'parliament', 'sanction', 'diplomacy', 'summit', 'treaty', 'legislation', 'vote', 'protest', 'coup'],
   humanitarian:     ['refugee', 'famine', 'aid', 'humanitarian', 'displaced', 'crisis', 'poverty', 'unicef'],
+  football:         ['football', 'soccer', 'premier league', 'champions league', 'fifa', 'uefa', 'goal', 'stadium', 'match', 'tournament', 'world cup'],
 };
 
 function categorize(text: string): EventCategory {
@@ -48,6 +49,53 @@ function detectRegion(text: string): string {
   return 'Global';
 }
 
+// ─── Tag detection for specific sub-categories ──────────────
+function detectTags(text: string): string[] {
+  const lower = text.toLowerCase();
+  const tags: string[] = [];
+  
+  // Football specific tags
+  if (/(transfer|signing|loan|contract|deal|bid|fee|medical|agreement|fabrizio|rumour|move to)/.test(lower)) tags.push('TRANSFER WINDOW');
+  if (/(injury|fitness|surgery|ruled out|recovery|squad|suspended|hamstring|knee|acl)/.test(lower)) tags.push('PLAYER STATUS');
+
+  // Conflict
+  if (/(troops|military|strike|bomb|missile|artillery|airstrike|invasion|offensive)/.test(lower)) tags.push('MILITARY ACTION');
+  if (/(ceasefire|diplomacy|treaty|negotiation|talks|peace)/.test(lower)) tags.push('DIPLOMACY');
+  if (/(killed|casualties|dead|injured|civilian)/.test(lower)) tags.push('CASUALTIES');
+
+  // Market
+  if (/(stock|dow|nasdaq|shares|wall street|index|bull|bear)/.test(lower)) tags.push('STOCK MARKET');
+  if (/(economy|inflation|gdp|recession|interest rate|fed|central bank)/.test(lower)) tags.push('ECONOMY');
+  if (/(earnings|ceo|merger|acquisition|corporate|bankruptcy)/.test(lower)) tags.push('CORPORATE');
+
+  // Resources
+  if (/(oil|gas|energy|coal|uranium|pipeline|opec|solar|wind)/.test(lower)) tags.push('ENERGY');
+  if (/(lithium|mining|water|commodity|rare earth|gold|copper)/.test(lower)) tags.push('COMMODITIES');
+  if (/(supply chain|shortage|export|import|tariff)/.test(lower)) tags.push('SUPPLY CHAIN');
+
+  // Natural Disaster
+  if (/(hurricane|flood|storm|cyclone|tornado|weather|rain)/.test(lower)) tags.push('SEVERE WEATHER');
+  if (/(earthquake|tsunami|volcano|seismic|tremor)/.test(lower)) tags.push('SEISMIC ACTIVITY');
+  if (/(warning|evacuation|alert|shelter|emergency)/.test(lower)) tags.push('WARNINGS');
+
+  // Cyber
+  if (/(breach|leak|stolen|hacked|password|phishing)/.test(lower)) tags.push('DATA BREACH');
+  if (/(ransomware|malware|virus|ddos)/.test(lower)) tags.push('RANSOMWARE');
+  if (/(infrastructure|grid|hospital|server|network)/.test(lower)) tags.push('INFRASTRUCTURE');
+
+  // Political
+  if (/(election|vote|poll|campaign|candidate|ballot)/.test(lower)) tags.push('ELECTIONS');
+  if (/(legislation|law|bill|parliament|congress|senate|policy)/.test(lower)) tags.push('POLICY');
+  if (/(protest|strike|riot|demonstration|rally)/.test(lower)) tags.push('PROTESTS');
+
+  // Humanitarian
+  if (/(refugee|displaced|asylum|camp|border)/.test(lower)) tags.push('REFUGEES');
+  if (/(aid|relief|fund|donation|unicef|red cross|supply)/.test(lower)) tags.push('AID & RELIEF');
+  if (/(famine|starvation|poverty|crisis|shortage)/.test(lower)) tags.push('CRISIS');
+  
+  return tags;
+}
+
 // ─── Simple RSS XML parser (no external dep for edge compat) ─
 function parseRSSItems(xml: string): Array<{ title: string; link: string; description: string; pubDate: string }> {
   const items: Array<{ title: string; link: string; description: string; pubDate: string }> = [];
@@ -70,6 +118,19 @@ function parseRSSItems(xml: string): Array<{ title: string; link: string; descri
     });
   }
   return items;
+}
+
+// ─── Similarity & Clustering ────────────────────────────────
+function calculateJaccardSimilarity(s1: string, s2: string): number {
+  const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(w => w.length > 3);
+  const words1 = new Set(normalize(s1));
+  const words2 = new Set(normalize(s2));
+  
+  const intersection = new Set([...words1].filter(x => words2.has(x)));
+  const union = new Set([...words1, ...words2]);
+  
+  if (union.size === 0) return 0;
+  return intersection.size / union.size;
 }
 
 // ─── Mock fallback data ─────────────────────────────────────
@@ -142,7 +203,7 @@ export async function GET() {
     const results = await Promise.allSettled(
       RSS_SOURCES.map(async (source) => {
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 5000);
+        const timeout = setTimeout(() => controller.abort(), 8000);
 
         try {
           const res = await fetch(source.feedUrl, {
@@ -156,16 +217,21 @@ export async function GET() {
           const xml = await res.text();
           const items = parseRSSItems(xml);
 
-          return items.slice(0, 10).map((item, i): NewsArticle => ({
-            id: `${source.id}_${i}_${Date.now()}`,
-            title: item.title,
-            summary: item.description,
-            source: source.name,
-            sourceUrl: item.link || source.feedUrl,
-            publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
-            category: categorize(item.title + ' ' + item.description),
-            region: detectRegion(item.title + ' ' + item.description),
-          }));
+          return items.slice(0, 10).map((item, i): NewsArticle & { _bias?: string } => {
+            const fullText = item.title + ' ' + item.description;
+            return {
+              id: `${source.id}_${i}_${Date.now()}`,
+              title: item.title,
+              summary: item.description,
+              source: source.name,
+              sourceUrl: item.link || source.feedUrl,
+              publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
+              category: categorize(fullText),
+              region: detectRegion(fullText),
+              tags: detectTags(fullText),
+              _bias: source.bias,
+            };
+          });
         } catch {
           clearTimeout(timeout);
           return [];
@@ -173,16 +239,81 @@ export async function GET() {
       })
     );
 
-    const articles: NewsArticle[] = results
-      .filter((r): r is PromiseFulfilledResult<NewsArticle[]> => r.status === 'fulfilled')
+    const rawArticles = results
+      .filter((r): r is PromiseFulfilledResult<(NewsArticle & { _bias?: string })[]> => r.status === 'fulfilled')
       .flatMap(r => r.value);
 
-    // If we got live data, return it sorted by date
-    if (articles.length > 3) {
-      articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
-      return Response.json(articles.slice(0, 50), { status: 200 });
+    // If we got live data, cluster it
+    if (rawArticles.length > 0) {
+      const clustered: NewsArticle[] = [];
+      const usedIndices = new Set<number>();
+
+      for (let i = 0; i < rawArticles.length; i++) {
+        if (usedIndices.has(i)) continue;
+        const base = rawArticles[i];
+        const clusterMembers = [base];
+        usedIndices.add(i);
+
+        for (let j = i + 1; j < rawArticles.length; j++) {
+          if (usedIndices.has(j)) continue;
+          const candidate = rawArticles[j];
+          
+          if (base.category !== candidate.category) continue;
+
+          // Simple semantic overlap
+          const sim = calculateJaccardSimilarity(base.title, candidate.title);
+          if (sim > 0.3) {
+            clusterMembers.push(candidate);
+            usedIndices.add(j);
+          }
+        }
+
+        // The longest summary becomes the lead article
+        clusterMembers.sort((a, b) => b.summary.length - a.summary.length);
+        const lead = clusterMembers[0];
+        
+        // Build related sources (deduplicated by source name)
+        const uniqueRelated: {source: string, sourceUrl: string, bias: string}[] = [];
+        const seenSources = new Set<string>();
+        for (const m of clusterMembers) {
+          if (!seenSources.has(m.source)) {
+            seenSources.add(m.source);
+            uniqueRelated.push({
+              source: m.source,
+              sourceUrl: m.sourceUrl,
+              bias: m._bias || 'center'
+            });
+          }
+        }
+
+        // Calculate actual trust factor based on cross-verification
+        let trust = 50; // base score
+        const numSources = uniqueRelated.length;
+        trust += (numSources - 1) * 15;
+        
+        const biases = new Set(uniqueRelated.map(r => r.bias));
+        if (biases.size > 1) trust += 15; // corroborated by different viewpoints
+        if (biases.size > 2) trust += 10;
+        
+        trust = Math.min(99, trust);
+
+        const finalArticle: NewsArticle = {
+          ...lead,
+          isCluster: numSources > 1,
+          relatedSources: uniqueRelated,
+          calculatedTrust: trust,
+        };
+        // @ts-ignore - removing internal tracking field
+        delete finalArticle._bias;
+
+        clustered.push(finalArticle);
+      }
+
+      clustered.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+      return Response.json(clustered.slice(0, 100), { status: 200 });
     }
 
+    console.warn('[TRUEARTH] Real news fetch resulted in 0 articles. Falling back to mock data.');
     // Fallback to mock data
     return Response.json(MOCK_NEWS, { status: 200 });
   } catch (error) {

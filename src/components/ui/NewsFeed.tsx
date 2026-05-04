@@ -17,6 +17,7 @@ const CATEGORY_COLORS: Record<EventCategory, string> = {
   cyber: '#a855f7',
   political: '#3b82f6',
   humanitarian: '#ec4899',
+  football: '#10b981',
 };
 
 function timeAgo(dateStr: string): string {
@@ -33,15 +34,17 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function NewsFeed() {
-  const { newsArticles, fetchNews, settings } = useGlobalStore();
+  const { newsArticles, fetchNews, startLiveNewsStream, settings } = useGlobalStore();
   const [activeSource, setActiveSource] = useState("ALL");
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    fetchNews();
-    const interval = setInterval(fetchNews, 300000); // 5 min
-    return () => clearInterval(interval);
-  }, [fetchNews]);
+    fetchNews().then(() => {
+      // Start the live stream simulator after the initial fetch
+      startLiveNewsStream();
+    });
+    // We don't need the 5-min interval anymore since the live stream handles updates
+  }, [fetchNews, startLiveNewsStream]);
 
   if (!settings.showNewsFeed) return null;
 

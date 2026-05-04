@@ -9,7 +9,22 @@ export type EventCategory =
   | 'natural_disaster'
   | 'cyber'
   | 'political'
-  | 'humanitarian';
+  | 'humanitarian'
+  | 'football';
+
+export type AssetCategory =
+  | 'sat_communication'
+  | 'sat_navigation'
+  | 'sat_weather'
+  | 'sat_research'
+  | 'sat_military'
+  | 'sat_other'
+  | 'air_commercial'
+  | 'air_cargo'
+  | 'air_military'
+  | 'ship_cargo'
+  | 'ship_tanker'
+  | 'ship_military';
 
 export type SeverityLevel = 'critical' | 'high' | 'elevated' | 'moderate' | 'low';
 
@@ -48,6 +63,10 @@ export interface NewsArticle {
   category: EventCategory;
   region: string;
   imageUrl?: string;
+  tags?: string[];
+  calculatedTrust?: number;
+  isCluster?: boolean;
+  relatedSources?: { source: string; sourceUrl: string; bias: string }[];
 }
 
 // ─── Coordinates ────────────────────────────────────────────
@@ -87,11 +106,14 @@ export interface UserSettings {
   autoRotateSpeed: number;
   showAtmosphere: boolean;
   showSatellites: boolean;
+  showPlanes: boolean;
+  showShips: boolean;
   showMarketTicker: boolean;
   showNewsFeed: boolean;
   showLayersPanel: boolean;
   newsSourceFilter: string[];
   theme: 'midnight' | 'dark' | 'terminal';
+  assetFilters: Record<string, boolean>;
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
@@ -100,11 +122,27 @@ export const DEFAULT_SETTINGS: UserSettings = {
   autoRotateSpeed: 0.4,
   showAtmosphere: true,
   showSatellites: true,
+  showPlanes: true,
+  showShips: true,
   showMarketTicker: true,
   showNewsFeed: true,
   showLayersPanel: true,
   newsSourceFilter: [],
   theme: 'midnight',
+  assetFilters: {
+    sat_communication: true,
+    sat_navigation: true,
+    sat_weather: true,
+    sat_research: true,
+    sat_military: true,
+    sat_other: true,
+    air_commercial: true,
+    air_cargo: true,
+    air_military: true,
+    ship_cargo: true,
+    ship_tanker: true,
+    ship_military: true,
+  },
 };
 
 // ─── Default Layers ─────────────────────────────────────────
@@ -116,4 +154,5 @@ export const DEFAULT_LAYERS: LayerConfig[] = [
   { id: 'cyber',             label: 'Cyber Threats',       icon: 'Shield',      color: '#a855f7', enabled: false, category: 'cyber' },
   { id: 'political',         label: 'Political Events',    icon: 'Landmark',    color: '#3b82f6', enabled: true,  category: 'political' },
   { id: 'humanitarian',      label: 'Humanitarian Crises', icon: 'HeartPulse',  color: '#ec4899', enabled: false, category: 'humanitarian' },
+  { id: 'football',          label: 'Football',            icon: 'Trophy',      color: '#10b981', enabled: true,  category: 'football' },
 ];
