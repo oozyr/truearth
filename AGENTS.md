@@ -4,7 +4,7 @@
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
 <!-- END:nextjs-agent-rules -->
 
-# TrueEarth Project Rules
+# TruEarth Project Rules
 
 ## 1. State Management
 - **Primary Store**: Use `src/store/useGlobalStore.ts` (Zustand) for all cross-component state (e.g., active layers, news feed, market tickers).
