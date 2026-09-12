@@ -1,6 +1,5 @@
 # 🌍 TruEarth: Real-Time Intelligence & Asset Tracking
 
-![TruEarth Hero Banner](public/images/hero_banner.png)
 
 > **TruEarth** is a high-fidelity, interactive intelligence platform designed for real-time monitoring of global assets, news verification, and geopolitical events. It combines 3D geospatial visualization with a robust data-processing engine.
 
